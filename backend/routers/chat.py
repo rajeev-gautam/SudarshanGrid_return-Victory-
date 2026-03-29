@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import Optional
 import models, schemas, auth, database
 import os
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
+# Robustly load the .env from the root directory
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(base_dir, "../.env"))
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -13,7 +16,10 @@ GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_API_KEY = os.getenv("VITE_GROQ_API_KEY")
 
 @router.post("", response_model=schemas.ChatResponse)
-async def chat_with_bot(request: schemas.ChatRequest, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(database.get_db)):
+async def chat_with_bot(request: schemas.ChatRequest, current_user: Optional[models.User] = Depends(auth.get_optional_current_user), db: Session = Depends(database.get_db)):
+    # If key is missing, return immediately
+    if not GROQ_API_KEY:
+        return {"text": "AI Service configuration missing. Please ensure VITE_GROQ_API_KEY is set in your .env file."}
     # 1. Get response from Groq
     try:
         response = requests.post(

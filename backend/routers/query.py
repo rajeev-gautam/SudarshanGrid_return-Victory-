@@ -7,11 +7,13 @@ from email.mime.multipart import MIMEMultipart
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Robustly load the .env from the root directory
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(base_dir, "../.env"))
 
 router = APIRouter(prefix="/api/queries", tags=["queries"])
 
-def send_acknowledgement_email(user_email: str, subject: str, message_content: str):
+def send_acknowledgement_email(user_email: str, subject: str, message_content: str, query_id: int):
     email_user = os.getenv("EMAIL_USER")
     email_password = os.getenv("EMAIL_PASSWORD")
     
@@ -55,6 +57,18 @@ def send_acknowledgement_email(user_email: str, subject: str, message_content: s
         server.send_message(msg)
         server.quit()
         print(f"Acknowledgement email sent to {user_email}")
+        
+        # Update status in DB to 'acknowledged'
+        from database import SessionLocal
+        db = SessionLocal()
+        try:
+            db_query = db.query(models.SupportQuery).filter(models.SupportQuery.id == query_id).first()
+            if db_query:
+                db_query.status = "acknowledged"
+                db.commit()
+        finally:
+            db.close()
+            
     except Exception as e:
         print(f"Failed to send email: {e}")
 
@@ -80,7 +94,8 @@ async def create_query(
         send_acknowledgement_email, 
         current_user.email, 
         request.subject, 
-        request.message
+        request.message,
+        new_query.id
     )
     
     return new_query

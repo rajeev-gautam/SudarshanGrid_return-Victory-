@@ -310,10 +310,7 @@ const RequestList = ({ t }) => {
   useEffect(() => {
     const fetchQueries = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:8000/api/queries', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await api.get('/queries');
         setQueries(res.data);
       } catch (err) {
         console.error("Failed to fetch queries:", err);

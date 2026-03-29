@@ -6,7 +6,9 @@ from email.mime.multipart import MIMEMultipart
 import os
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+# Robustly load the .env from the root directory
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(base_dir, "../.env"), override=True)
 
 router = APIRouter(prefix="/api/contact", tags=["contact"])
 

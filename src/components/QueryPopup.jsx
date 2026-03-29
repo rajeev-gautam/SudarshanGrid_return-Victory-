@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Mic, MicOff, Loader2, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+import api from '../services/api';
 import GlassCard from './GlassCard';
 
 const QueryPopup = () => {
@@ -65,13 +65,14 @@ const QueryPopup = () => {
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:8000/api/queries', {
+      await api.post('/queries', {
         subject,
         message
-      }, {
-        headers: { 'Authorization': `Bearer ${token}` }
       });
+      
+      // Notify dashboard to refresh
+      window.dispatchEvent(new CustomEvent('refreshQueries'));
+      
       setIsSuccess(true);
       setSubject('');
       setMessage('');
